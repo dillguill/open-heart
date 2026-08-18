@@ -1,9 +1,18 @@
 /**
  * Records list + document import — User Story 1 (T022, T024, T025).
  * Manual health-record entry lives in app/record/[id].tsx (T023).
+ * Pamphlet world: humanized labels, differentiated document rows with a viewer.
  */
 import { useCallback, useState } from "react";
-import { Alert, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  Alert,
+  FlatList,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import { File } from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
@@ -11,11 +20,29 @@ import { Link, useFocusEffect, useRouter } from "expo-router";
 
 import { useAppSession } from "../../src/hooks/useAppSession";
 import { inferMimeType, isSupportedDocumentMimeType } from "../../src/lib/mimeTypes";
+import { humanizeCategory, humanizeMetricType } from "../../src/lib/metricLabels";
 import type { Category, DocumentRecord, HealthRecord } from "../../src/models/types";
 import * as Repo from "../../src/repositories";
 import { InsufficientStorageError } from "../../src/services/storage/fileStorage";
+import { colors, fonts, radii, spacing, typeScale } from "../../src/theme/tokens";
+import {
+  ActivityIcon,
+  ChevronRightIcon,
+  FileIcon,
+  PlusIcon,
+} from "../../src/components/icons";
+import { ChipRow, PrimaryButton, Screen, SecondaryButton } from "../../src/components/ui";
 
 const CATEGORIES: Category[] = ["vitals", "labs", "medications", "conditions", "imaging", "notes"];
+
+const CATEGORY_LABELS: Record<Category, string> = {
+  vitals: "Vitals",
+  labs: "Labs",
+  medications: "Medications",
+  conditions: "Conditions",
+  imaging: "Imaging",
+  notes: "Notes",
+};
 
 type FeedItem = { kind: "record"; item: HealthRecord } | { kind: "document"; item: DocumentRecord };
 
@@ -25,6 +52,7 @@ export default function RecordsScreen() {
   const [records, setRecords] = useState<HealthRecord[]>([]);
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
   const [importCategory, setImportCategory] = useState<Category>("labs");
+  const [viewingDocument, setViewingDocument] = useState<DocumentRecord | null>(null);
 
   const profileId = session.activeProfileId!;
 
@@ -120,42 +148,35 @@ export default function RecordsScreen() {
   });
 
   return (
-    <View style={styles.container}>
-      <View style={styles.actionsRow}>
-        <Link href="/record/new" asChild>
-          <Pressable style={styles.primaryButton}>
-            <Text style={styles.primaryButtonText}>+ Add record</Text>
-          </Pressable>
-        </Link>
-      </View>
-
-      <Text style={styles.sectionLabel}>Import document as</Text>
-      <View style={styles.chipRow}>
-        {CATEGORIES.map((category) => (
-          <Pressable
-            key={category}
-            onPress={() => setImportCategory(category)}
-            style={[styles.chip, importCategory === category && styles.chipActive]}
-          >
-            <Text style={[styles.chipText, importCategory === category && styles.chipTextActive]}>
-              {category}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-      <View style={styles.importRow}>
-        <Pressable style={[styles.secondaryButton, styles.flex1]} onPress={handleImportFromFiles}>
-          <Text style={styles.secondaryButtonText}>Import file…</Text>
-        </Pressable>
-        <Pressable style={[styles.secondaryButton, styles.flex1]} onPress={handleImportFromCamera}>
-          <Text style={styles.secondaryButtonText}>Take photo…</Text>
-        </Pressable>
-      </View>
-
+    <Screen>
       <FlatList
         style={styles.list}
+        contentContainerStyle={styles.listContent}
         data={feed}
         keyExtractor={(entry) => `${entry.kind}-${entry.item.id}`}
+        ListHeaderComponent={
+          <View>
+            <Link href="/record/new" asChild>
+              <PrimaryButton label="Add a record" icon={<PlusIcon size={18} color={colors.white} />} onPress={() => {}} />
+            </Link>
+
+            <Text style={styles.importLabel}>Import a document as</Text>
+            <ChipRow
+              options={CATEGORIES}
+              labels={CATEGORY_LABELS}
+              value={importCategory}
+              onChange={setImportCategory}
+            />
+            <View style={styles.importRow}>
+              <View style={styles.flex1}>
+                <SecondaryButton label="Import file…" onPress={handleImportFromFiles} />
+              </View>
+              <View style={styles.flex1}>
+                <SecondaryButton label="Take photo…" onPress={handleImportFromCamera} />
+              </View>
+            </View>
+          </View>
+        }
         ListEmptyComponent={
           <Text style={styles.emptyText}>
             No records yet. Add a record or import a document to get started.
@@ -164,28 +185,85 @@ export default function RecordsScreen() {
         renderItem={({ item: entry }) =>
           entry.kind === "record" ? (
             <Pressable
-              style={styles.row}
+              style={({ pressed }) => [styles.row, pressed && styles.pressed]}
               onPress={() =>
                 router.push({ pathname: "/record/[id]", params: { id: entry.item.id } })
               }
+              accessibilityRole="button"
             >
-              <Text style={styles.rowTitle}>{entry.item.metricType}</Text>
-              <Text style={styles.rowSubtitle}>
-                {entry.item.value} {entry.item.unit ?? ""} · {entry.item.category} ·{" "}
-                {new Date(entry.item.recordedAt).toLocaleDateString()}
-              </Text>
+              <View style={styles.rowIcon}>
+                <ActivityIcon size={18} color={colors.green} />
+              </View>
+              <View style={styles.rowBody}>
+                <Text style={styles.rowTitle}>{humanizeMetricType(entry.item.metricType)}</Text>
+                <Text style={styles.rowSubtitle}>
+                  {entry.item.value} {entry.item.unit ?? ""} · {humanizeCategory(entry.item.category)} ·{" "}
+                  {new Date(entry.item.recordedAt).toLocaleDateString()}
+                </Text>
+              </View>
+              <ChevronRightIcon size={18} color={colors.inkMuted} />
             </Pressable>
           ) : (
-            <View style={styles.row}>
-              <Text style={styles.rowTitle}>{entry.item.title}</Text>
-              <Text style={styles.rowSubtitle}>
-                {entry.item.category} · {new Date(entry.item.importedAt).toLocaleDateString()}
-              </Text>
-            </View>
+            <Pressable
+              style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+              onPress={() => setViewingDocument(entry.item)}
+              accessibilityRole="button"
+            >
+              <View style={styles.rowIcon}>
+                <FileIcon size={18} color={colors.inkMuted} />
+              </View>
+              <View style={styles.rowBody}>
+                <View style={styles.docTitleRow}>
+                  <Text style={styles.rowTitle} numberOfLines={1}>
+                    {entry.item.title}
+                  </Text>
+                  <View style={styles.pdfBadge}>
+                    <Text style={styles.pdfBadgeText}>
+                      {entry.item.mimeType === "application/pdf" ? "PDF" : "IMG"}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={styles.rowSubtitle}>
+                  {humanizeCategory(entry.item.category)} ·{" "}
+                  {new Date(entry.item.importedAt).toLocaleDateString()}
+                </Text>
+              </View>
+              <ChevronRightIcon size={18} color={colors.inkMuted} />
+            </Pressable>
           )
         }
       />
-    </View>
+
+      {/* Lightweight document viewer */}
+      <Modal
+        visible={viewingDocument !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setViewingDocument(null)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalIcon}>
+              <FileIcon size={28} color={colors.green} />
+            </View>
+            <Text style={styles.modalTitle}>{viewingDocument?.title}</Text>
+            <Text style={styles.modalMeta}>
+              {viewingDocument ? humanizeCategory(viewingDocument.category) : ""} ·{" "}
+              {viewingDocument
+                ? new Date(viewingDocument.importedAt).toLocaleDateString()
+                : ""}
+            </Text>
+            {viewingDocument?.notes ? (
+              <Text style={styles.modalNotes}>{viewingDocument.notes}</Text>
+            ) : null}
+            <Text style={styles.modalHint}>
+              In the native app this document opens from your device&rsquo;s protected storage.
+            </Text>
+            <PrimaryButton label="Close" onPress={() => setViewingDocument(null)} />
+          </View>
+        </View>
+      </Modal>
+    </Screen>
   );
 }
 
@@ -199,44 +277,92 @@ function confirmAsync(title: string, message: string): Promise<boolean> {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  actionsRow: { flexDirection: "row", marginBottom: 12 },
-  sectionLabel: { fontSize: 13, color: "#6B6B6B", textTransform: "uppercase", marginTop: 8 },
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginVertical: 8 },
-  chip: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 16,
-    backgroundColor: "#F2F2F2",
-  },
-  chipActive: { backgroundColor: "#0B5D4A" },
-  chipText: { fontSize: 13, color: "#333" },
-  chipTextActive: { color: "white", fontWeight: "600" },
-  primaryButton: {
-    backgroundColor: "#0B5D4A",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-  },
-  primaryButtonText: { color: "white", fontWeight: "600", fontSize: 15 },
-  secondaryButton: {
-    borderWidth: 1,
-    borderColor: "#0B5D4A",
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  secondaryButtonText: { color: "#0B5D4A", fontWeight: "600" },
-  importRow: { flexDirection: "row", gap: 8, marginBottom: 12 },
-  flex1: { flex: 1 },
   list: { flex: 1 },
-  emptyText: { textAlign: "center", color: "#6B6B6B", marginTop: 32 },
-  row: {
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#DDD",
+  listContent: {
+    padding: spacing.lg,
+    paddingBottom: spacing.xxl,
+    maxWidth: 720,
+    width: "100%",
+    alignSelf: "center",
   },
-  rowTitle: { fontSize: 16, fontWeight: "600" },
-  rowSubtitle: { fontSize: 13, color: "#6B6B6B", marginTop: 2 },
+  importLabel: {
+    fontSize: typeScale.small,
+    color: colors.inkMuted,
+    fontWeight: "600",
+    marginTop: spacing.xl,
+    marginBottom: spacing.sm,
+  },
+  importRow: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.md, marginBottom: spacing.lg },
+  flex1: { flex: 1 },
+  emptyText: {
+    textAlign: "center",
+    color: colors.inkMuted,
+    marginTop: spacing.xxl,
+    fontSize: typeScale.body,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    paddingVertical: 14,
+    paddingHorizontal: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.rule,
+    backgroundColor: colors.white,
+  },
+  rowIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: radii.sm,
+    backgroundColor: colors.paperDeep,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  rowBody: { flex: 1, gap: 2 },
+  rowTitle: { fontSize: typeScale.body, fontWeight: "600", color: colors.ink },
+  rowSubtitle: { fontSize: typeScale.small, color: colors.inkMuted },
+  docTitleRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  pdfBadge: {
+    backgroundColor: colors.greenSoft,
+    borderRadius: 4,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+  },
+  pdfBadgeText: { fontSize: 10, fontWeight: "700", color: colors.greenDeep },
+  pressed: { opacity: 0.85 },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(15, 25, 21, 0.5)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: spacing.xl,
+  },
+  modalCard: {
+    backgroundColor: colors.paper,
+    borderRadius: radii.lg,
+    padding: spacing.xl,
+    gap: spacing.sm,
+    maxWidth: 420,
+    width: "100%",
+    alignItems: "center",
+  },
+  modalIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: radii.md,
+    backgroundColor: colors.greenSoft,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: spacing.sm,
+  },
+  modalTitle: {
+    fontFamily: fonts.display,
+    fontSize: typeScale.title,
+    fontWeight: "700",
+    color: colors.ink,
+    textAlign: "center",
+  },
+  modalMeta: { fontSize: typeScale.small, color: colors.inkMuted },
+  modalNotes: { fontSize: typeScale.body, color: colors.ink, textAlign: "center", lineHeight: 21 },
+  modalHint: { fontSize: typeScale.small, color: colors.inkMuted, textAlign: "center", marginBottom: spacing.sm },
 });

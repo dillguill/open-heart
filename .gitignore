@@ -64,3 +64,11 @@ e2e/.output/
 .claude/
 .cursor/
 .windsurf/
+
+# Impeccable session artifacts (design.json is the tracked design-system sidecar)
+.impeccable/audit/
+.impeccable/critique/
+.impeccable/live/
+.impeccable/questions/
+.impeccable/review/
+.impeccable/hook.cache.json

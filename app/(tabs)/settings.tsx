@@ -1,40 +1,71 @@
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, StyleSheet, Text, View } from "react-native";
 
 import { useAppSession } from "../../src/hooks/useAppSession";
+import { colors, fonts, radii, spacing, typeScale } from "../../src/theme/tokens";
+import { LockIcon, ShieldIcon } from "../../src/components/icons";
+import { Callout, PrimaryButton, Screen, SectionHeader } from "../../src/components/ui";
 
 export default function SettingsScreen() {
   const session = useAppSession();
   const activeProfile = session.profiles.find((p) => p.id === session.activeProfileId);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.label}>Active profile</Text>
-      <Text style={styles.value}>{activeProfile?.displayName ?? "—"}</Text>
+    <Screen>
+      <View style={styles.content}>
+        <View style={styles.profileCard}>
+          <View style={styles.profileIcon}>
+            <ShieldIcon size={22} color={colors.green} />
+          </View>
+          <View style={styles.profileBody}>
+            <Text style={styles.profileLabel}>Active profile</Text>
+            <Text style={styles.profileValue}>{activeProfile?.displayName ?? "—"}</Text>
+          </View>
+        </View>
 
-      {Platform.OS !== "web" && (
-        <Pressable style={styles.lockButton} onPress={() => session.lock()}>
-          <Text style={styles.lockButtonText}>Lock now / switch profile</Text>
-        </Pressable>
-      )}
+        {Platform.OS !== "web" && (
+          <View style={styles.lockSection}>
+            <SectionHeader title="Security" />
+            <PrimaryButton label="Lock now / switch profile" onPress={() => session.lock()} icon={<LockIcon size={18} color={colors.white} />} />
+          </View>
+        )}
 
-      <Text style={styles.note}>
-        AI provider configuration and multi-profile management are coming in the next milestone.
-      </Text>
-    </View>
+        <SectionHeader title="Coming next" />
+        <Callout tone="neutral">
+          AI provider configuration and multi-profile management are in the next milestone.
+        </Callout>
+      </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, gap: 8 },
-  label: { fontSize: 13, color: "#6B6B6B", textTransform: "uppercase", marginTop: 16 },
-  value: { fontSize: 18, fontWeight: "600" },
-  lockButton: {
-    marginTop: 24,
-    padding: 14,
-    borderRadius: 10,
-    backgroundColor: "#F2F2F2",
-    alignItems: "center",
+  content: {
+    padding: spacing.lg,
+    maxWidth: 720,
+    width: "100%",
+    alignSelf: "center",
   },
-  lockButtonText: { color: "#B3261E", fontSize: 15, fontWeight: "600" },
-  note: { marginTop: 32, fontSize: 14, color: "#6B6B6B" },
+  profileCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    backgroundColor: colors.paperDeep,
+    borderWidth: 1,
+    borderColor: colors.rule,
+    borderRadius: radii.md,
+    padding: spacing.lg,
+    marginTop: spacing.lg,
+  },
+  profileIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: radii.md,
+    backgroundColor: colors.greenSoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  profileBody: { gap: 2 },
+  profileLabel: { fontSize: typeScale.small, color: colors.inkMuted, textTransform: "uppercase", letterSpacing: 0.4 },
+  profileValue: { fontSize: typeScale.title, fontWeight: "700", color: colors.ink, fontFamily: fonts.display },
+  lockSection: { marginTop: spacing.sm },
 });

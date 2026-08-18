@@ -9,8 +9,20 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAppSession } from "../../src/hooks/useAppSession";
 import type { Category, HealthRecord } from "../../src/models/types";
 import * as Repo from "../../src/repositories";
+import { colors, fonts, radii, spacing, typeScale } from "../../src/theme/tokens";
+import { ArrowLeftIcon } from "../../src/components/icons";
+import { ChipRow, PrimaryButton, Screen } from "../../src/components/ui";
 
 const CATEGORIES: Category[] = ["vitals", "labs", "medications", "conditions", "imaging", "notes"];
+
+const CATEGORY_LABELS: Record<Category, string> = {
+  vitals: "Vitals",
+  labs: "Labs",
+  medications: "Medications",
+  conditions: "Conditions",
+  imaging: "Imaging",
+  notes: "Notes",
+};
 
 export default function RecordDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -103,92 +115,123 @@ export default function RecordDetailScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.label}>Category</Text>
-      <View style={styles.chipRow}>
-        {CATEGORIES.map((c) => (
-          <Pressable
-            key={c}
-            onPress={() => setCategory(c)}
-            style={[styles.chip, category === c && styles.chipActive]}
-          >
-            <Text style={[styles.chipText, category === c && styles.chipTextActive]}>{c}</Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <Text style={styles.label}>
-        Metric (e.g. &ldquo;weight&rdquo;, &ldquo;blood_pressure_systolic&rdquo;)
-      </Text>
-      <TextInput style={styles.input} value={metricType} onChangeText={setMetricType} />
-
-      <View style={styles.row2}>
-        <View style={styles.flex1}>
-          <Text style={styles.label}>Value</Text>
-          <TextInput
-            style={styles.input}
-            value={value}
-            onChangeText={setValue}
-            keyboardType="default"
-          />
-        </View>
-        <View style={styles.flex1}>
-          <Text style={styles.label}>Unit (optional)</Text>
-          <TextInput style={styles.input} value={unit} onChangeText={setUnit} />
-        </View>
-      </View>
-
-      <Text style={styles.label}>Date (YYYY-MM-DD)</Text>
-      <TextInput style={styles.input} value={recordedAt} onChangeText={setRecordedAt} />
-
-      <Text style={styles.label}>Notes (optional)</Text>
-      <TextInput
-        style={[styles.input, styles.notesInput]}
-        value={notes}
-        onChangeText={setNotes}
-        multiline
-      />
-
-      <Pressable style={styles.primaryButton} onPress={handleSave} disabled={saving}>
-        <Text style={styles.primaryButtonText}>{saving ? "Saving…" : "Save"}</Text>
-      </Pressable>
-
-      {existing && (
-        <Pressable style={styles.deleteButton} onPress={handleDelete}>
-          <Text style={styles.deleteButtonText}>Delete record</Text>
+    <Screen>
+      <View style={styles.header}>
+        <Pressable
+          onPress={() => router.back()}
+          style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
+          <ArrowLeftIcon size={20} color={colors.ink} />
         </Pressable>
-      )}
-    </ScrollView>
+        <Text style={styles.headerTitle}>{isNew ? "Add a record" : "Record"}</Text>
+        <View style={styles.headerSpacer} />
+      </View>
+
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+        <Text style={styles.label}>Category</Text>
+        <ChipRow options={CATEGORIES} labels={CATEGORY_LABELS} value={category} onChange={setCategory} />
+
+        <Text style={styles.label}>Metric name</Text>
+        <Text style={styles.hint}>e.g. Blood pressure (systolic), weight, glucose</Text>
+        <TextInput
+          style={styles.input}
+          value={metricType}
+          onChangeText={setMetricType}
+          placeholder="e.g. weight"
+          placeholderTextColor={colors.inkMuted}
+        />
+
+        <View style={styles.row2}>
+          <View style={styles.flex1}>
+            <Text style={styles.label}>Value</Text>
+            <TextInput
+              style={styles.input}
+              value={value}
+              onChangeText={setValue}
+              keyboardType="default"
+            />
+          </View>
+          <View style={styles.flex1}>
+            <Text style={styles.label}>Unit (optional)</Text>
+            <TextInput style={styles.input} value={unit} onChangeText={setUnit} />
+          </View>
+        </View>
+
+        <Text style={styles.label}>Date</Text>
+        <TextInput style={styles.input} value={recordedAt} onChangeText={setRecordedAt} />
+
+        <Text style={styles.label}>Notes (optional)</Text>
+        <TextInput
+          style={[styles.input, styles.notesInput]}
+          value={notes}
+          onChangeText={setNotes}
+          multiline
+        />
+
+        <PrimaryButton label={saving ? "Saving…" : "Save record"} onPress={handleSave} disabled={saving} />
+
+        {existing && (
+          <Pressable style={styles.deleteButton} onPress={handleDelete}>
+            <Text style={styles.deleteButtonText}>Delete record</Text>
+          </Pressable>
+        )}
+      </ScrollView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { padding: 16, gap: 4 },
-  label: { fontSize: 13, color: "#6B6B6B", marginTop: 12, marginBottom: 4 },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.rule,
+    backgroundColor: colors.paper,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: radii.sm,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.paperDeep,
+  },
+  headerTitle: {
+    fontFamily: fonts.display,
+    fontSize: typeScale.heading,
+    fontWeight: "600",
+    color: colors.ink,
+  },
+  headerSpacer: { width: 40 },
+  pressed: { opacity: 0.85 },
+  scrollView: { flex: 1 },
+  content: {
+    padding: spacing.lg,
+    paddingBottom: spacing.xxl,
+    maxWidth: 720,
+    width: "100%",
+    alignSelf: "center",
+    gap: 2,
+  },
+  label: { fontSize: typeScale.small, color: colors.ink, fontWeight: "600", marginTop: spacing.lg, marginBottom: 4 },
+  hint: { fontSize: typeScale.small, color: colors.inkMuted, marginBottom: 4 },
   input: {
     borderWidth: 1,
-    borderColor: "#D0D0D0",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
+    borderColor: colors.rule,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    fontSize: typeScale.body,
+    color: colors.ink,
+    backgroundColor: colors.white,
   },
   notesInput: { minHeight: 80, textAlignVertical: "top" },
-  row2: { flexDirection: "row", gap: 12 },
+  row2: { flexDirection: "row", gap: spacing.md },
   flex1: { flex: 1 },
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 16, backgroundColor: "#F2F2F2" },
-  chipActive: { backgroundColor: "#0B5D4A" },
-  chipText: { fontSize: 13, color: "#333" },
-  chipTextActive: { color: "white", fontWeight: "600" },
-  primaryButton: {
-    backgroundColor: "#0B5D4A",
-    padding: 14,
-    borderRadius: 10,
-    alignItems: "center",
-    marginTop: 24,
-  },
-  primaryButtonText: { color: "white", fontSize: 16, fontWeight: "600" },
-  deleteButton: { padding: 14, alignItems: "center", marginTop: 8 },
-  deleteButtonText: { color: "#B3261E", fontSize: 15, fontWeight: "600" },
+  deleteButton: { padding: 14, alignItems: "center", marginTop: spacing.sm },
+  deleteButtonText: { color: colors.error, fontSize: typeScale.body, fontWeight: "600" },
 });

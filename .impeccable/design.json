@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-18T00:00:00.000Z",
+  "title": "Design System: Open Heart",
+  "extensions": {
+    "colorMeta": {
+      "green": { "role": "primary", "displayName": "Deep Leaf Green", "canonical": "#0B5D4A", "tonalRamp": ["#E3EFEA", "#0A4A3B", "#0B5D4A"] },
+      "paper": { "role": "neutral", "displayName": "Warm Paper", "canonical": "#FDFCF8", "tonalRamp": ["#FFFFFF", "#FDFCF8", "#F4F1E8"] },
+      "amber": { "role": "secondary", "displayName": "Disclosure Amber", "canonical": "#E8A33D", "tonalRamp": ["#FBF1DC", "#E8A33D", "#6B4A00"] },
+      "error": { "role": "tertiary", "displayName": "Stamp Red", "canonical": "#B23A2E", "tonalRamp": ["#F9E9E7", "#B23A2E"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Screen and page titles only — the pamphlet's editorial serif voice." },
+      "title": { "displayName": "Title", "purpose": "Card and callout titles, chart stat values." },
+      "heading": { "displayName": "Heading", "purpose": "Section headers and header-bar titles." },
+      "body": { "displayName": "Body", "purpose": "Primary reading text, rows, table labels; ~65ch column." },
+      "label": { "displayName": "Label", "purpose": "Field labels, callout titles (uppercase), metadata." }
+    },
+    "motion": [
+      { "name": "pressed", "value": "opacity 0.85", "purpose": "The pressed state of interactive elements — a dim, never a lift." },
+      { "name": "modal-fade", "value": "fade 200ms", "purpose": "Modal backdrop and card appearance." }
+    ],
+    "breakpoints": [
+      { "name": "content-column", "value": "720px", "purpose": "Max content width on desktop surfaces." },
+      { "name": "auth-column", "value": "520px", "purpose": "Max width of profile-picker and unlock screens." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single dominant action per screen — deep green fill with white 600 text and optional leading icon.",
+      "html": "<button class=\"ds-btn-primary\">Add a record</button>",
+      "css": ".ds-btn-primary { background: #0B5D4A; color: #fff; padding: 14px 20px; border-radius: 12px; font-weight: 600; font-size: 15px; border: none; display: inline-flex; align-items: center; gap: 8px; } .ds-btn-primary:active { opacity: 0.85; } .ds-btn-primary:disabled { opacity: 0.5; }"
+    },
+    {
+      "name": "Doctor Summary Callout",
+      "kind": "custom",
+      "refersTo": "callout-green",
+      "description": "The Home screen's signature element — the at-a-glance health story, made to show a doctor.",
+      "html": "<button class=\"ds-summary-callout\"><span class=\"ds-summary-icon\">❤</span><span class=\"ds-summary-body\"><strong>Your health at a glance</strong><span>A clear, organized summary of your records — made to show a doctor.</span></span><span>›</span></button>",
+      "css": ".ds-summary-callout { display: flex; align-items: center; gap: 12px; background: #0B5D4A; color: #fff; border: none; border-radius: 16px; padding: 24px; text-align: left; width: 100%; } .ds-summary-icon { width: 52px; height: 52px; border-radius: 12px; background: rgba(255,255,255,0.16); display: grid; place-items: center; } .ds-summary-body { display: flex; flex-direction: column; gap: 2px; flex: 1; } .ds-summary-body strong { font-family: 'Source Serif 4', Georgia, serif; font-size: 22px; font-weight: 700; }"
+    },
+    {
+      "name": "Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Category and range selectors — cream pills that flip to deep green when selected.",
+      "html": "<button class=\"ds-chip\">Labs</button>",
+      "css": ".ds-chip { background: #F4F1E8; color: #1F2A26; border: 1px solid #D8D2C4; border-radius: 999px; padding: 7px 14px; font-size: 13px; font-weight: 500; } .ds-chip-active { background: #0B5D4A; color: #fff; border-color: #0B5D4A; font-weight: 600; }"
+    },
+    {
+      "name": "Data Table",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "Structured at-a-glance data — label + date meta left, tabular value right, ruled rows.",
+      "html": "<div class=\"ds-table\"><div class=\"ds-row\"><div><strong>Weight</strong><span>8/17/2026</span></div><span class=\"ds-value\">71.4 kg</span></div></div>",
+      "css": ".ds-table { border: 1px solid #D8D2C4; border-radius: 12px; background: #fff; overflow: hidden; } .ds-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 16px; } .ds-row + .ds-row { border-top: 1px solid #D8D2C4; } .ds-value { font-weight: 600; font-variant-numeric: tabular-nums; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Patient Education Pamphlet",
+    "overview": "Open Heart presents the user's health story the way a well-made patient education leaflet does: plain-language, reassuring, and structured so anyone — especially a clinician — grasps the whole picture at a glance. The page is paper, not glass: a warm paper-white ground with deep green ink, ruled section lines, callout boxes, and tabular numerals. It deliberately refuses the generic data-dashboard CRUD shell. The system is flat and tonal; depth comes from paper layering and hairline rules, never shadows. Calm is a feature — this is health data, treated with the seriousness and quiet care of a clinic brochure.",
+    "keyCharacteristics": [
+      "Paper-white ground with deep green ink — one committed accent on whole regions",
+      "Ruled section headers and hairline dividers instead of shadows",
+      "Callout boxes (green privacy, amber disclosure, red destructive)",
+      "Tabular numerals for all measurements",
+      "Humanist sans body with a warm editorial serif display (Source Serif 4)",
+      "Authored SVG icons in one consistent 1.8px stroke"
+    ],
+    "rules": [
+      { "name": "The Paper Rule", "body": "Text never sits on glass or gradient; every surface is a flat paper tone with a hairline rule. Separate with a cream or white sheet, never a shadow.", "section": "colors" },
+      { "name": "The Measure Rule", "body": "All measurement values render in tabular numerals so columns and comparisons align.", "section": "typography" }
+    ],
+    "dos": [
+      "Do lead every screen with the user's story at a glance — the doctor summary is the leaflet's front page.",
+      "Do use paper tones and hairline rules for separation.",
+      "Do render every measurement in tabular numerals.",
+      "Do speak plain language — humanized metric labels, never snake_case.",
+      "Do give every full-screen route a back control and every tappable row an affordance.",
+      "Do keep the deep green for whole regions and let it be rare."
+    ],
+    "donts": [
+      "Don't use glyphs or emoji as icons — authored SVG, 1.8px stroke.",
+      "Don't use shadows, gradients, glass, or bevels.",
+      "Don't place an eyebrow or kicker above a heading.",
+      "Don't use a system display face as the display voice — Source Serif 4 is the display.",
+      "Don't use neutral gray for muted text — tint from the green hue (#5C6B64).",
+      "Don't stretch content full-bleed on desktop — 720px column.",
+      "Don't label AI output as anything other than informational, never diagnostic."
+    ]
+  }
+}
