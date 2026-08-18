@@ -1,0 +1,6 @@
+# Maestro workspace config — https://docs.maestro.dev/reference/workspace-configuration
+# Flow files live in e2e/, one per user story (see specs/001-personal-health-vault/tasks.md T054).
+flows:
+  - "e2e/*.yaml"
+
+testOutputDir: ./e2e/.output
