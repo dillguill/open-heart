@@ -14,6 +14,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import Head from "expo-router/head";
 import { Stack } from "expo-router";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
@@ -24,6 +25,9 @@ import type { Relationship } from "../src/models/types";
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
+      <Head>
+        <title>Open Heart</title>
+      </Head>
       <AppSessionProvider>
         <AppLockGate>
           {Platform.OS === "web" && <DemoBanner />}
